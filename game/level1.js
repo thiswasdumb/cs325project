@@ -1,5 +1,6 @@
 import { setupPlayer } from './player.js';
-import * as THREE from '../node_modules/three/build/three.module.js';
+import * as THREE from 'https://cdn.skypack.dev/three@0.129.0/build/three.module.js';
+import { GLTFLoader } from 'https://cdn.skypack.dev/three@0.129.0/examples/jsm/loaders/GLTFLoader.js';
 
 export function createLevel1(renderer, scene, camera, nextLevelCallback) {
     // Clear previous scene
@@ -22,27 +23,52 @@ export function createLevel1(renderer, scene, camera, nextLevelCallback) {
     scene.add(ambientLight);
 
     // Add fireflies with light sources
-    const fireflyMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00 }); // Yellow light
+    const loader = new GLTFLoader();
+
     for (let i = 0; i < 20; i++) {
-        const firefly = new THREE.Mesh(new THREE.SphereGeometry(0.2), fireflyMaterial);
-        firefly.position.set(Math.random() * 80 - 40, Math.random() * 5 + 3, Math.random() * 80 - 40); // Random positions
+        loader.load('../assets/firefly', (gltf) => {
+            const firefly = gltf.scene;
 
-        // Add light to the firefly
-        const fireflyLight = new THREE.PointLight(0xffff00, 1, 10); // Yellow light with small radius
-        fireflyLight.position.set(0, 0, 0); // Light follows firefly
-        firefly.add(fireflyLight);
-        scene.add(firefly);
+            // Randomly position the firefly in the scene
+            firefly.position.set(
+                Math.random() * 80 - 40, // X position
+                Math.random() * 5 + 3,   // Y position (floating height)
+                Math.random() * 80 - 40  // Z position
+            );
 
-        // Animate fireflies
-        const speed = Math.random() * 0.02 + 0.01;
-        const amplitude = Math.random() * 2 + 1;
+            // Scale the firefly model (adjust if needed)
+            firefly.scale.set(0.4, 0.4, 0.4);
 
-        const updateFirefly = () => {
-            firefly.position.y += Math.sin(Date.now() * speed) * amplitude * 0.001; // Up and down movement
-            requestAnimationFrame(updateFirefly);
-        };
-        updateFirefly();
+            // Add random rotation in the x-direction
+            firefly.rotation.x = Math.random() * Math.PI / 2; // Random rotation between 0 and 360 degrees
+
+            // Add a light source to the bottom of the firefly
+            const fireflyLight = new THREE.PointLight(0xffff00, 1, 13); // Yellow light with slightly smaller radius
+            fireflyLight.position.set(0, -0.5, 0); // Move light slightly below the model
+            firefly.add(fireflyLight); // Add the light to the firefly so it moves with it
+
+            // Add the firefly to the scene
+            scene.add(firefly);
+
+            // Animate fireflies to float up and down with bigger bobbing
+            const speed = Math.random() * 0.02; // Random speed
+            const amplitude = Math.random() * 0.5;   // Increased amplitude for bigger bobbing
+
+            const initialY = firefly.position.y; // Store the initial Y position
+
+            const updateFirefly = () => {
+                // Make the firefly float up and down with a bigger amplitude
+                firefly.position.y = initialY + Math.sin(Date.now() * speed) * amplitude * 0.5;
+                requestAnimationFrame(updateFirefly); // Recursive animation
+            };
+            updateFirefly();
+        },
+            undefined,
+            (error) => {
+                console.error('An error occurred while loading the firefly model:', error);
+            });
     }
+
 
     // Portal and slots
     const portal = new THREE.Mesh(new THREE.CircleGeometry(5, 32), new THREE.MeshBasicMaterial({ color: 0x0000ff })); // Blue portal
