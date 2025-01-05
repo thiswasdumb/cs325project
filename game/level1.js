@@ -88,11 +88,42 @@ export function createLevel1(renderer, scene, camera, nextLevelCallback) {
         }
     };
 
-    // Portal and slots
-    const portal = new THREE.Mesh(new THREE.CircleGeometry(5, 32), new THREE.MeshBasicMaterial({ color: 0x0000ff })); // Blue portal
-    portal.rotation.x = -Math.PI / 2;
-    portal.position.set(0, 0.01, 0);
-    scene.add(portal);
+    // Load the portal frame
+    let portalFrame;
+    loader.load('assets/portalframe', (gltf) => {
+        portalFrame = gltf.scene;
+        portalFrame.rotation.x = 0; // Match original rotation
+        portalFrame.position.set(0, 0.01, 0); // Match original position
+        scene.add(portalFrame);
+
+        // Load the portal light and add it to the portal frame
+        loader.load('assets/portallight', (gltfLight) => {
+            const portalLight = gltfLight.scene;
+            portalLight.position.set(0, 0, 0); // Centered within the portal frame
+            portalFrame.add(portalLight);
+
+            // Ensure original material properties are preserved
+            portalLight.traverse((child) => {
+                if (child.isMesh) {
+                    child.material.emissive = new THREE.Color(0x00ffff); // More vibrant neon blue
+                    child.material.emissiveIntensity = 4; // Increase glow intensity
+                }
+            });
+
+            // Add a stronger point light for better illumination
+            const pointLight = new THREE.PointLight(0x00ffff, 1.5, 7); // More intense and larger range
+            pointLight.castShadow = true; // Enable shadows for better depth perception
+            pointLight.position.set(0, 2, 0); // Positioned slightly above the portal frame
+            portalFrame.add(pointLight);
+
+            // Optional: Add bloom effect for a glowing appearance
+            const bloomEffect = new THREE.BloomEffect({
+                intensity: 1.5, // Adjust glow intensity
+            });
+            composer.addPass(new THREE.EffectPass(camera, bloomEffect));
+        });
+    });
+
 
     const slots = [];
     const slotPieces = [];
