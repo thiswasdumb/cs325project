@@ -2,15 +2,12 @@ import { setupPlayer } from './player.js';
 import * as THREE from 'https://cdn.skypack.dev/three@0.129.0/build/three.module.js';
 import { GLTFLoader } from 'https://cdn.skypack.dev/three@0.129.0/examples/jsm/loaders/GLTFLoader.js';
 
+
 export function createLevel2(renderer, scene, camera, nextLevelCallback) {
     // Clear previous scene
     while (scene.children.length > 0) {
         scene.remove(scene.children[0]);
     }
-
-    // Player inventory
-    let inventory = 0;
-    let portalActivated = false;
 
     // Set up the cave floor
     const planeGeometry = new THREE.PlaneGeometry(100, 100, 50, 50);
@@ -43,6 +40,58 @@ export function createLevel2(renderer, scene, camera, nextLevelCallback) {
     scene.add(ambientLight);
 
     const loader = new GLTFLoader();
+
+    // Load and place music crystals
+    const musicCrystals = [
+        { model: '../assets/musiccrystal1', sound: '../assets/sounds/C4.mp3' },
+        { model: '../assets/musiccrystal2', sound: '../assets/sounds/D4.mp3' },
+        { model: '../assets/musiccrystal3', sound: '../assets/sounds/E4.mp3' },
+        { model: '../assets/musiccrystal4', sound: '../assets/sounds/F4.mp3' },
+        { model: '../assets/musiccrystal5', sound: '../assets/sounds/G4.mp3' }
+    ];
+
+    const crystalGroup = new THREE.Group(); // Group to hold all music crystals
+
+    musicCrystals.forEach((crystalData, index) => {
+        loader.load(
+            crystalData.model,
+            (gltf) => {
+                const crystal = gltf.scene;
+
+                // Position the crystals side by side at the end of the tunnel
+                crystal.position.set(index * 1.5 + 40, 1, -50); // Adjust X for spacing
+                crystal.scale.set(1.5, 1.5, 1.5);
+
+                // Add neon blue light source to each crystal
+                const crystalLight = new THREE.PointLight(0x00ffff, 1.5, 10); // Neon blue light
+                crystalLight.position.set(0, 0.75, 0); // Light originates slightly above the crystal
+                crystal.add(crystalLight);
+
+                // Add click event listener to play the note
+                crystal.userData = { note: crystalData.note }; // Store note in userData
+                crystal.userData.clicked = false;
+                crystal.addEventListener('click', () => {
+                    if (!crystal.userData.clicked) {
+                        const audio = new Audio(crystal.userData.sound); // Load the sound
+                        audio.play(); // Play the sound
+                        console.log(`Played sound: ${crystal.userData.sound}`);
+                        crystal.userData.clicked = true;
+                    }
+                });
+
+                crystalGroup.add(crystal); // Add to group
+            },
+            undefined,
+            (error) => {
+                console.error(`Error loading music crystal model (${crystalData.model}):`, error);
+            }
+        );
+    });
+
+    crystalGroup.position.set(95, 0, 43); // Position the group at the end of the tunnel
+    crystalGroup.rotation.y = Math.PI / 2; // Rotate 90 degrees in the X direction
+
+    scene.add(crystalGroup);
 
     // Purple crystals generator
     function addPurpleCrystals(parent, count, radius, length, isTunnel = false) {
@@ -109,7 +158,7 @@ export function createLevel2(renderer, scene, camera, nextLevelCallback) {
 
         const roomRadius = 10; // Radius of the rooms
         const tunnelRadius = 8.5; // Radius of the connecting tunnel
-        const tunnelLength = 80; // Length of the connecting tunnel
+        const tunnelLength = 60; // Length of the connecting tunnel
 
         function createBumpyMaterial(color) {
             return new THREE.MeshStandardMaterial({
@@ -158,7 +207,7 @@ export function createLevel2(renderer, scene, camera, nextLevelCallback) {
         addBumpiness(tunnelGeometry, 0.8); // Add bumpiness to the tunnel
         const tunnel = new THREE.Mesh(tunnelGeometry, rockyMaterial);
         tunnel.rotation.z = Math.PI / 2; // Align the tunnel horizontally
-        tunnel.position.set(roomRadius + 20, 0, 0); // Position it to connect with the hemisphere
+        tunnel.position.set(roomRadius + 10, 0, 0); // Position it to connect with the hemisphere
         environment.add(tunnel);
 
         // Add purple crystals to the tunnel
@@ -169,6 +218,36 @@ export function createLevel2(renderer, scene, camera, nextLevelCallback) {
     };
 
     createRockyEnvironment();
+
+    // Set up the raycaster and mouse position
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+
+    const handleMouseClick = (event) => {
+        // Convert mouse position to normalized device coordinates
+        mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+        // Update the raycaster
+        raycaster.setFromCamera(mouse, camera);
+
+        // Check for intersections with the music crystals
+        const intersects = raycaster.intersectObjects(crystalGroup.children, true);
+
+        if (intersects.length > 0) {
+            const clickedCrystal = intersects[0].object.parent; // Get the clicked crystal's parent (model group)
+
+            if (!clickedCrystal.userData.clicked) {
+                const audio = new Audio(clickedCrystal.userData.sound); // Load the sound
+                audio.play(); // Play the sound
+                console.log(`Played sound: ${clickedCrystal.userData.sound}`);
+                clickedCrystal.userData.clicked = true; // Mark as clicked
+            }
+        }
+    };
+
+    // Add the mouse click event listener
+    window.addEventListener('click', handleMouseClick);
 
     // Player movement
     const movePlayer = setupPlayer(camera);

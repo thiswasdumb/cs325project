@@ -5,6 +5,25 @@ export function setupPlayer(camera) {
     let pitch = 0; // Up/Down rotation (rotation.x)
     let yaw = 0;   // Left/Right rotation (rotation.y)
     const groundLevel = 2; // Fixed height for the player above the ground
+    let pointerLocked = false; // Track pointer lock status
+
+    // Add crosshair to the screen
+    function createCrosshair() {
+        const crosshair = document.createElement('div');
+        crosshair.style.position = 'absolute';
+        crosshair.style.top = '50%';
+        crosshair.style.left = '50%';
+        crosshair.style.width = '8px';
+        crosshair.style.height = '8px';
+        crosshair.style.backgroundColor = 'red';
+        crosshair.style.borderRadius = '50%'; // Make it a dot
+        crosshair.style.transform = 'translate(-50%, -50%)';
+        crosshair.style.zIndex = '1000'; // Ensure it appears above everything
+        document.body.appendChild(crosshair);
+    }
+
+    // Call the crosshair creation function
+    createCrosshair();
 
     // Track key presses for WASD movement
     document.addEventListener('keydown', (event) => {
@@ -15,14 +34,23 @@ export function setupPlayer(camera) {
         keysPressed[event.key.toLowerCase()] = false;
     });
 
-    // Enable pointer lock for unlimited mouse movement
+    // Enable or disable pointer lock on click
     document.body.addEventListener('click', () => {
-        document.body.requestPointerLock();
+        if (!pointerLocked) {
+            document.body.requestPointerLock();
+        }
+    });
+
+    // Track pointer lock changes
+    document.addEventListener('pointerlockchange', () => {
+        pointerLocked = document.pointerLockElement === document.body;
+        // Update cursor visibility
+        document.body.style.cursor = pointerLocked ? 'none' : 'default';
     });
 
     // Mouse movement to adjust camera orientation
     document.addEventListener('mousemove', (event) => {
-        if (document.pointerLockElement === document.body) {
+        if (pointerLocked) {
             const sensitivity = 0.002; // Adjust to control turning speed
             yaw -= event.movementX * sensitivity; // Left/right movement
             pitch -= event.movementY * sensitivity; // Up/down movement
