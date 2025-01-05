@@ -1,6 +1,7 @@
 import * as THREE from 'https://cdn.skypack.dev/three@0.129.0/build/three.module.js';
 import { createMenu } from './game/menu.js';
 import { createLevel1 } from './game/level1.js';
+import { createLevel2 } from './game/level2.js';
 //import { GLTFLoader } from '../node_modules/three/examples/jsm/loaders/GLTFLoader.js';
 
 console.log(THREE);
@@ -16,8 +17,8 @@ const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerH
 
 // Start the Game
 function startGame() {
-    createLevel1(renderer, scene, camera, () => {
-        alert("You completed Level 1! Add a transition to Level 2 here.");
+    createLevel2(renderer, scene, camera, () => {
+        alert("You completed Level 2! Add a transition to Level 2 here.");
     });
 }
 
