@@ -11,12 +11,37 @@ export function createLevel1(renderer, scene, camera, nextLevelCallback) {
     // Player inventory for puzzle pieces
     let inventory = 0;
 
-    // Set up the ground
-    const planeGeometry = new THREE.PlaneGeometry(100, 100);
-    const planeMaterial = new THREE.MeshStandardMaterial({ color: 0x228b22 }); // Green ground
+    // Set up the ground with varied shades of green
+    const planeGeometry = new THREE.PlaneGeometry(100, 100, 50, 50); // Add subdivisions for vertex coloring
+    const planeMaterial = new THREE.MeshStandardMaterial({
+        vertexColors: true, // Enable vertex colors
+        metalness: 0.0, // No metallic reflection
+        roughness: 1.0, // Fully rough surface for less shine
+    });
+
+    // Add vertex colors to the geometry
+    const colors = [];
+    for (let i = 0; i < planeGeometry.attributes.position.count; i++) {
+        // Generate darker shades of green
+        const shade = Math.random() * 0.4 + 0.4; // Range between 0.2 and 0.4 for a dark green
+        colors.push(0, shade, 0); // RGB values for dark green shades
+    }
+
+    // Assign the colors to the geometry
+    planeGeometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+
+    for (let i = 0; i < planeGeometry.attributes.position.count; i++) {
+        const vertex = planeGeometry.attributes.position.array;
+        vertex[i * 3 + 2] += Math.random() * 0.5 + 0.2; // Add noise to Z (height)
+    }
+    planeGeometry.attributes.position.needsUpdate = true; // Update the geometry
+
+
+    // Create the ground mesh
     const plane = new THREE.Mesh(planeGeometry, planeMaterial);
-    plane.rotation.x = -Math.PI / 2;
+    plane.rotation.x = -Math.PI / 2; // Rotate to lie flat
     scene.add(plane);
+
 
     // Reduce ambient light for darkness
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.1); // Very dim light
@@ -25,6 +50,11 @@ export function createLevel1(renderer, scene, camera, nextLevelCallback) {
     const loader = new GLTFLoader();
     let fireflyModel = null;
     let treeModel = null;
+    let portalFrame = null;
+    let portalActivated = false;
+
+    const puzzlePieces = [];
+    const slotPieces = [];
 
     // Load models
     const loadModels = async () => {
@@ -75,7 +105,8 @@ export function createLevel1(renderer, scene, camera, nextLevelCallback) {
         const portalRadius = 5;
         for (let x = -40; x <= 40; x += 7.5) {
             for (let z = -40; z <= 40; z += 7.5) {
-                const distanceToPortal = Math.sqrt((x - portal.position.x) ** 2 + (z - portal.position.z) ** 2);
+                if (!portalFrame) continue; // Ensure portalFrame is loaded
+                const distanceToPortal = Math.sqrt((x - portalFrame.position.x) ** 2 + (z - portalFrame.position.z) ** 2);
                 if (distanceToPortal < portalRadius + 2 || Math.random() > 0.7) continue;
 
                 const tree = treeModel.clone();
@@ -89,7 +120,6 @@ export function createLevel1(renderer, scene, camera, nextLevelCallback) {
     };
 
     // Load the portal frame
-    let portalFrame;
     loader.load('assets/portalframe', (gltf) => {
         portalFrame = gltf.scene;
         portalFrame.rotation.x = 0; // Match original rotation
@@ -115,44 +145,52 @@ export function createLevel1(renderer, scene, camera, nextLevelCallback) {
             pointLight.castShadow = true; // Enable shadows for better depth perception
             pointLight.position.set(0, 2, 0); // Positioned slightly above the portal frame
             portalFrame.add(pointLight);
-
-            // Optional: Add bloom effect for a glowing appearance
-            const bloomEffect = new THREE.BloomEffect({
-                intensity: 1.5, // Adjust glow intensity
-            });
-            composer.addPass(new THREE.EffectPass(camera, bloomEffect));
         });
     });
 
-
-    const slots = [];
-    const slotPieces = [];
+    // Puzzle pieces and slots setup
     for (let i = 0; i < 4; i++) {
-        const slot = new THREE.Mesh(new THREE.CircleGeometry(1, 32), new THREE.MeshBasicMaterial({ color: 0x808080 })); // Gray slots
-        slot.rotation.x = -Math.PI / 2;
-        const angle = (i / 4) * Math.PI * 2;
-        slot.position.set(Math.cos(angle) * 6, 0.02, Math.sin(angle) * 6);
-        scene.add(slot);
-        slots.push(slot);
-
-        const slotPiece = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial({ color: 0x000000 })); // Initially black
+        const slotPiece = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial({ color: 0x000000 }));
         slotPiece.visible = false; // Hidden initially
-        slotPiece.position.set(slot.position.x, 1, slot.position.z);
-        scene.add(slotPiece);
         slotPieces.push(slotPiece);
     }
 
-    // Create puzzle pieces
-    const puzzlePieces = [];
-    const puzzleMaterial = new THREE.MeshStandardMaterial({ color: 0x87ceeb, emissive: 0x87ceeb });
     for (let i = 0; i < 4; i++) {
-        const piece = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), puzzleMaterial);
-        piece.position.set(Math.random() * 80 - 40, 1, Math.random() * 80 - 40);
-        scene.add(piece);
-        puzzlePieces.push(piece);
+        loader.load('assets/piece', (gltfPiece) => {
+            const piece = gltfPiece.scene;
+            piece.position.set(
+                Math.random() * 80 - 40, // Random X position
+                0.5, // Slightly above the ground to avoid clipping
+                Math.random() * 80 - 40 // Random Z position
+            );
+            piece.scale.set(1, 1, 1); // Adjust size if needed
+            scene.add(piece);
+            puzzlePieces.push(piece);
+
+            // Load the light model and attach it to the puzzle piece
+            loader.load('assets/piecelight', (gltfLight) => {
+                const piecelight = gltfLight.scene;
+                piecelight.position.set(0, 0.5, 0); // Centered slightly above the piece
+                piecelight.scale.set(1, 1, 1); // Scale to match the piece size
+                piece.add(piecelight);
+
+                // Add a visible glowing effect to the piecelight
+                piecelight.traverse((child) => {
+                    if (child.isMesh) {
+                        child.material.emissive = new THREE.Color(0x00ffff); // Vibrant blue emissive light
+                        child.material.emissiveIntensity = 1.5; // Bright glow
+                    }
+                });
+
+                // Add a point light to make the light effect visible
+                const pointLight = new THREE.PointLight(0x00ffff, 1.5, 7); // Vibrant blue light
+                pointLight.castShadow = true; // Enable shadows for depth
+                pointLight.position.set(0, 0.5, 0); // Position relative to the piece
+                piece.add(pointLight);
+            });
+        });
     }
 
-    let portalActivated = false;
 
     // Handle puzzle piece collection
     function collectPuzzlePieces() {
@@ -175,13 +213,12 @@ export function createLevel1(renderer, scene, camera, nextLevelCallback) {
             });
         }
 
-        if (inventory === 4 && playerPosition.distanceTo(portal.position) < 6 && !portalActivated) {
-            portal.material.color.set(0x00ff00);
+        if (inventory === 4 && portalFrame && playerPosition.distanceTo(portalFrame.position) < 6 && !portalActivated) {
             console.log("Portal activated! Step on it to transition to Level 2.");
             portalActivated = true;
         }
 
-        if (portalActivated && playerPosition.distanceTo(portal.position) < 5) {
+        if (portalActivated && portalFrame && playerPosition.distanceTo(portalFrame.position) < 5) {
             console.log("Stepping on the portal! Transitioning to Level 2...");
             nextLevelCallback();
         }
