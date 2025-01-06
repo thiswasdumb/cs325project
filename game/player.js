@@ -1,96 +1,96 @@
-import * as THREE from 'https://cdn.skypack.dev/three@0.129.0/build/three.module.js';
+import * as THREE from 'https://cdn.skypack.dev/three@0.129.0/build/three.module.js'
 
+// The function that sets up the player controls, including camera movement and keyboard input.
 export function setupPlayer(camera) {
-    const keysPressed = {};
-    let pitch = 0; // Up/Down rotation (rotation.x)
-    let yaw = 0;   // Left/Right rotation (rotation.y)
-    const groundLevel = 2; // Fixed height for the player above the ground
-    let pointerLocked = false; // Track pointer lock status
+    const keysPressed = {} // Tracks the state of WASD keys for movement
+    let pitch = 0 // Vertical rotation of the camera
+    let yaw = 0 // Horizontal rotation of the camera
+    // The above two just following naming conventions
+    const groundLevel = 2 // Fixed height for the player's position
+    let pointerLocked = false // Indicates whether the mouse pointer is locked to the game
 
-    // Set the camera's rotation order to 'YXZ'
-    camera.rotation.order = 'YXZ';
+    // Configure the camera's rotation order to 'YXZ' for proper orientation control.
+    camera.rotation.order = 'YXZ'
 
-    // Add crosshair to the screen
+    // Adds a crosshair to the center of the screen for better aiming and orientation.
     function createCrosshair() {
-        const crosshair = document.createElement('div');
-        crosshair.style.position = 'absolute';
-        crosshair.style.top = '50%';
-        crosshair.style.left = '50%';
-        crosshair.style.width = '8px';
-        crosshair.style.height = '8px';
-        crosshair.style.backgroundColor = 'purple';
-        crosshair.style.borderRadius = '50%'; // Make it a dot
-        crosshair.style.transform = 'translate(-50%, -50%)';
-        crosshair.style.zIndex = '1000'; // Ensure it appears above everything
-        document.body.appendChild(crosshair);
+        const crosshair = document.createElement('div')
+        crosshair.style.position = 'absolute'
+        crosshair.style.top = '50%'
+        crosshair.style.left = '50%'
+        crosshair.style.width = '8px'
+        crosshair.style.height = '8px'
+        crosshair.style.backgroundColor = 'purple'
+        crosshair.style.borderRadius = '50%' // Make it a dot
+        crosshair.style.transform = 'translate(-50%, -50%)'
+        crosshair.style.zIndex = '1000' // Ensure it appears above everything
+        document.body.appendChild(crosshair)
     }
 
-    // Call the crosshair creation function
-    createCrosshair();
+    // Initialize the crosshair on the screen.
+    createCrosshair()
 
-    // Track key presses for WASD movement
+    // Registers key presses to track player movement with WASD keys.
     document.addEventListener('keydown', (event) => {
-        keysPressed[event.key.toLowerCase()] = true;
-    });
+        keysPressed[event.key.toLowerCase()] = true
+    })
 
     document.addEventListener('keyup', (event) => {
-        keysPressed[event.key.toLowerCase()] = false;
-    });
+        keysPressed[event.key.toLowerCase()] = false
+    })
 
-    // Enable or disable pointer lock on click
+    // Enables mouse pointer lock to allow full control over camera rotation during gameplay.
     document.body.addEventListener('click', () => {
         if (!pointerLocked) {
-            document.body.requestPointerLock();
+            document.body.requestPointerLock()
         }
-    });
+    })
 
-    // Track pointer lock changes
+    // Updates pointer lock status and adjusts the cursor visibility accordingly.
     document.addEventListener('pointerlockchange', () => {
-        pointerLocked = document.pointerLockElement === document.body;
-        // Update cursor visibility
-        document.body.style.cursor = pointerLocked ? 'none' : 'default';
-    });
+        pointerLocked = document.pointerLockElement === document.body
+        document.body.style.cursor = pointerLocked ? 'none' : 'default'
+    })
 
-    // Mouse movement to adjust camera orientation
+    // Listens to mouse movement and adjusts the camera's pitch and yaw based on pointer movements.
     document.addEventListener('mousemove', (event) => {
         if (pointerLocked) {
-            const sensitivity = 0.002; // Adjust to control turning speed
-            yaw -= event.movementX * sensitivity; // Left/right movement
-            pitch -= event.movementY * sensitivity; // Up/down movement
+            const sensitivity = 0.002 // Controls the speed of rotation
+            yaw -= event.movementX * sensitivity // Adjust yaw (left/right)
+            pitch -= event.movementY * sensitivity // Adjust pitch (up/down)
 
-            // Clamp pitch to prevent looking too far up or down
-            pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, pitch));
+            // Ensures the player cannot look too far up or down by clamping pitch values.
+            pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, pitch))
         }
-    });
+    })
 
-    // Update camera orientation
+    // Updates the camera's orientation based on pitch and yaw values.
     function updateCameraOrientation() {
-        camera.rotation.set(pitch, yaw, 0); // Set roll (z-axis rotation) to 0
+        camera.rotation.set(pitch, yaw, 0)
     }
 
-    // Move the camera using WASD keys
+    // Handles player movement using WASD keys, applying movement relative to the camera's orientation.
     function movePlayer() {
-        const speed = 0.1; // Movement speed
-        const direction = new THREE.Vector3();
+        const speed = 0.1 // Speed of player movement
+        const direction = new THREE.Vector3()
 
-        // Forward/Backward
-        if (keysPressed['w']) direction.z -= speed;
-        if (keysPressed['s']) direction.z += speed;
+        // Determine movement direction based on active keys.
+        if (keysPressed['w']) direction.z -= speed // Forward
+        if (keysPressed['s']) direction.z += speed // Backward
+        if (keysPressed['a']) direction.x -= speed // Left
+        if (keysPressed['d']) direction.x += speed // Right
 
-        // Left/Right
-        if (keysPressed['a']) direction.x -= speed;
-        if (keysPressed['d']) direction.x += speed;
+        // Adjust movement direction to align with the camera's current rotation.
+        direction.applyEuler(camera.rotation)
+        camera.position.add(direction)
 
-        // Apply movement direction relative to the camera's orientation
-        direction.applyEuler(camera.rotation);
-        camera.position.add(direction);
-
-        // Keep the player on the ground
-        camera.position.y = groundLevel;
+        // Maintain a constant height above the ground.
+        camera.position.y = groundLevel
     }
 
+    // Returns a function that combines player movement and camera orientation updates effectively.
     return function update() {
-        movePlayer();
-        updateCameraOrientation();
-    };
+        movePlayer()
+        updateCameraOrientation()
+    }
 }
