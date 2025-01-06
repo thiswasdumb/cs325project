@@ -1,7 +1,10 @@
 import { setupPlayer } from './player.js';
 import * as THREE from 'https://cdn.skypack.dev/three@0.129.0/build/three.module.js';
 import { GLTFLoader } from 'https://cdn.skypack.dev/three@0.129.0/examples/jsm/loaders/GLTFLoader.js';
+import { EventDispatcher } from 'https://cdn.skypack.dev/three@0.129.0/build/three.module.js';
 
+// Initialize a Map to track sounds
+const soundMap = new Map();
 
 export function createLevel2(renderer, scene, camera, nextLevelCallback) {
     // Clear previous scene
@@ -41,6 +44,10 @@ export function createLevel2(renderer, scene, camera, nextLevelCallback) {
 
     const loader = new GLTFLoader();
 
+    // Set up the raycaster and mouse position
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+
     // Load and place music crystals
     const musicCrystals = [
         { model: '../assets/musiccrystal1', sound: '../assets/sounds/C4.mp3' },
@@ -51,6 +58,44 @@ export function createLevel2(renderer, scene, camera, nextLevelCallback) {
     ];
 
     const crystalGroup = new THREE.Group(); // Group to hold all music crystals
+    function handleMouseClick(event) {
+        // Convert mouse position to normalized device coordinates
+        mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+        // Update the raycaster
+        raycaster.setFromCamera(mouse, camera);
+
+        // Check for intersections
+        const intersects = raycaster.intersectObjects(scene.children, true);
+
+        if (intersects.length > 0) {
+            let clickedObject = intersects[0].object;
+
+            console.log('Clicked Object:', clickedObject);
+            console.log('Parent Hierarchy:', clickedObject?.parent);
+
+
+            // Traverse up the parent hierarchy to find a mapped object
+            while (clickedObject && !soundMap.has(clickedObject)) {
+                clickedObject = clickedObject.parent;
+            }
+
+            if (clickedObject && soundMap.has(clickedObject)) {
+                const soundPath = soundMap.get(clickedObject);
+                const audio = new Audio(soundPath);
+                audio.play();
+                console.log(`Played sound: ${soundPath}`);
+            } else {
+                console.log('Clicked object is not mapped to a sound.');
+            }
+        } else {
+            console.log('No object clicked.');
+        }
+    }
+
+
+    window.addEventListener('click', handleMouseClick);
 
     musicCrystals.forEach((crystalData, index) => {
         loader.load(
@@ -58,35 +103,35 @@ export function createLevel2(renderer, scene, camera, nextLevelCallback) {
             (gltf) => {
                 const crystal = gltf.scene;
 
-                // Position the crystals side by side at the end of the tunnel
-                crystal.position.set(index * 1.5 + 40, 1, -50); // Adjust X for spacing
+                // Add sound mapping
+                soundMap.set(crystal, crystalData.sound);
+
+                // Position and scale the crystal
+                crystal.position.set(index * 1.5 + 40, 1, -50);
                 crystal.scale.set(1.5, 1.5, 1.5);
 
-                // Add neon blue light source to each crystal
-                const crystalLight = new THREE.PointLight(0x00ffff, 1.5, 10); // Neon blue light
-                crystalLight.position.set(0, 0.75, 0); // Light originates slightly above the crystal
+                // Add neon blue light source
+                const crystalLight = new THREE.PointLight(0x00ffff, 1.5, 10);
+                crystalLight.position.set(0, 1.5, 0);
                 crystal.add(crystalLight);
 
-                // Add click event listener to play the note
-                crystal.userData = { note: crystalData.note }; // Store note in userData
-                crystal.userData.clicked = false;
-                crystal.addEventListener('click', () => {
-                    if (!crystal.userData.clicked) {
-                        const audio = new Audio(crystal.userData.sound); // Load the sound
-                        audio.play(); // Play the sound
-                        console.log(`Played sound: ${crystal.userData.sound}`);
-                        crystal.userData.clicked = true;
-                    }
-                });
-
-                crystalGroup.add(crystal); // Add to group
+                // Add crystal to the group
+                crystalGroup.add(crystal);
             },
             undefined,
             (error) => {
-                console.error(`Error loading music crystal model (${crystalData.model}):`, error);
+                console.error(`Error loading model ${crystalData.model}:`, error);
             }
         );
     });
+
+    const intersectableObjects = [];
+    crystalGroup.traverse((child) => {
+        if (child.isMesh) {
+            intersectableObjects.push(child);
+        }
+    });
+
 
     crystalGroup.position.set(95, 0, 43); // Position the group at the end of the tunnel
     crystalGroup.rotation.y = Math.PI / 2; // Rotate 90 degrees in the X direction
@@ -218,33 +263,6 @@ export function createLevel2(renderer, scene, camera, nextLevelCallback) {
     };
 
     createRockyEnvironment();
-
-    // Set up the raycaster and mouse position
-    const raycaster = new THREE.Raycaster();
-    const mouse = new THREE.Vector2();
-
-    const handleMouseClick = (event) => {
-        // Convert mouse position to normalized device coordinates
-        mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-        mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-
-        // Update the raycaster
-        raycaster.setFromCamera(mouse, camera);
-
-        // Check for intersections with the music crystals
-        const intersects = raycaster.intersectObjects(crystalGroup.children, true);
-
-        if (intersects.length > 0) {
-            const clickedCrystal = intersects[0].object.parent; // Get the clicked crystal's parent (model group)
-
-            if (!clickedCrystal.userData.clicked) {
-                const audio = new Audio(clickedCrystal.userData.sound); // Load the sound
-                audio.play(); // Play the sound
-                console.log(`Played sound: ${clickedCrystal.userData.sound}`);
-                clickedCrystal.userData.clicked = true; // Mark as clicked
-            }
-        }
-    };
 
     // Add the mouse click event listener
     window.addEventListener('click', handleMouseClick);
