@@ -1,6 +1,7 @@
 import { setupPlayer } from './player.js';
 import * as THREE from 'https://cdn.skypack.dev/three@0.129.0/build/three.module.js';
 import { GLTFLoader } from 'https://cdn.skypack.dev/three@0.129.0/examples/jsm/loaders/GLTFLoader.js';
+import { createLevel2 } from './level2.js';
 
 export function createLevel1(renderer, scene, camera, nextLevelCallback) {
     // Clear previous scene
@@ -66,8 +67,8 @@ export function createLevel1(renderer, scene, camera, nextLevelCallback) {
             loader.load('../assets/tree', (gltf) => resolve(gltf.scene), undefined, reject);
         });
 
-        generateFireflies();
-        generateTrees();
+        //generateFireflies();
+        //generateTrees();
     };
 
     // Generate fireflies
@@ -123,7 +124,7 @@ export function createLevel1(renderer, scene, camera, nextLevelCallback) {
     loader.load('assets/portalframe', (gltf) => {
         portalFrame = gltf.scene;
         portalFrame.rotation.x = 0; // Match original rotation
-        portalFrame.position.set(0, 0.01, 0); // Match original position
+        portalFrame.position.set(0, 1, 0); // Match original position
         scene.add(portalFrame);
 
         // Load the portal light and add it to the portal frame
@@ -143,7 +144,7 @@ export function createLevel1(renderer, scene, camera, nextLevelCallback) {
             // Add a stronger point light for better illumination
             const pointLight = new THREE.PointLight(0x00ffff, 1.5, 7); // More intense and larger range
             pointLight.castShadow = true; // Enable shadows for better depth perception
-            pointLight.position.set(0, 2, 0); // Positioned slightly above the portal frame
+            pointLight.position.set(0, 1, 0); // Positioned slightly above the portal frame
             portalFrame.add(pointLight);
         });
     });
@@ -159,9 +160,10 @@ export function createLevel1(renderer, scene, camera, nextLevelCallback) {
         loader.load('assets/piece', (gltfPiece) => {
             const piece = gltfPiece.scene;
             piece.position.set(
-                Math.random() * 80 - 40, // Random X position
+                /*Math.random() * 80 - 40, // Random X position
                 0.5, // Slightly above the ground to avoid clipping
-                Math.random() * 80 - 40 // Random Z position
+                Math.random() * 80 - 40 // Random Z position*/
+                10, 1, i
             );
             piece.scale.set(1, 1, 1); // Adjust size if needed
             scene.add(piece);
@@ -170,7 +172,7 @@ export function createLevel1(renderer, scene, camera, nextLevelCallback) {
             // Load the light model and attach it to the puzzle piece
             loader.load('assets/piecelight', (gltfLight) => {
                 const piecelight = gltfLight.scene;
-                piecelight.position.set(0, 0.5, 0); // Centered slightly above the piece
+                piecelight.position.set(0, 0, 0); // Centered slightly above the piece
                 piecelight.scale.set(1, 1, 1); // Scale to match the piece size
                 piece.add(piecelight);
 
@@ -199,30 +201,53 @@ export function createLevel1(renderer, scene, camera, nextLevelCallback) {
         puzzlePieces.forEach((piece, index) => {
             if (piece && piece.position.distanceTo(playerPosition) < 2) {
                 scene.remove(piece);
-                puzzlePieces[index] = null;
                 inventory++;
                 console.log(`Collected piece ${index + 1}. Inventory: ${inventory}/4`);
             }
         });
 
-        if (inventory === 4 && !portalActivated) {
-            console.log("All pieces collected! Placing in slots...");
-            slotPieces.forEach((slotPiece, index) => {
-                slotPiece.visible = true;
-                slotPiece.material.color.set(0x87ceeb);
+        // Check if all pieces are collected and player is near the portal
+        if (inventory >= 4 && portalFrame && playerPosition.distanceTo(portalFrame.position) < 5 && !portalActivated) {
+            console.log("All pieces collected! Placing above the portal...");
+
+            const positions = [
+                { x: 5.50, y: 1, z: 5.50 }, // Above the portal, offset to be visible
+                { x: 0, y: 1, z: 5.25 },
+                { x: 0, y: 1, z: 0.25 },
+                { x: 5.75, y: 1, z: 0.25 },
+            ];
+
+
+            // Place each puzzle piece above the portal frame
+            puzzlePieces.forEach((piece, index) => {
+                if (piece) {
+                    const pos = positions[index];
+                    piece.position.set(
+                        pos.x,
+                        pos.y,
+                        pos.z
+                    );
+
+                    // Apply rotation with adjustment based on directionMultiplier
+                    const rotationAngle = (3 * Math.PI / 2) * index + Math.PI; // Convert to radians
+                    piece.rotation.set(0, rotationAngle, 0); // Rotate around the Y-axis
+
+                    piece.visible = true; // Ensure pieces are visible
+                    scene.add(piece);
+                }
             });
-        }
 
-        if (inventory === 4 && portalFrame && playerPosition.distanceTo(portalFrame.position) < 6 && !portalActivated) {
-            console.log("Portal activated! Step on it to transition to Level 2.");
             portalActivated = true;
-        }
 
-        if (portalActivated && portalFrame && playerPosition.distanceTo(portalFrame.position) < 5) {
-            console.log("Stepping on the portal! Transitioning to Level 2...");
-            nextLevelCallback();
+            // Wait 5 seconds before transitioning to the next level
+            setTimeout(() => {
+                console.log("Transitioning to Level 2...");
+                createLevel2(renderer, scene, camera);
+            }, 5000);
         }
     }
+
+
 
     const movePlayer = setupPlayer(camera);
 
@@ -239,3 +264,4 @@ export function createLevel1(renderer, scene, camera, nextLevelCallback) {
     // Start loading models
     loadModels();
 }
+

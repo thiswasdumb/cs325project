@@ -2,21 +2,33 @@ body {
     margin: 0;
     overflow: hidden;
     /* Prevent scrolling */
-    font-family: Arial, sans-serif;
+    font-family: 'Borel', fantasy;
     background-color: black;
 }
 
 button {
-    background-color: #4CAF50;
+    background-color: #6b12ca;
     color: white;
     border: none;
     border-radius: 5px;
     padding: 10px 20px;
     font-size: 18px;
+    font-family: 'Borel', fantasy;
     cursor: pointer;
     transition: background-color 0.3s;
+    margin: 10px 0;
+    /* Adjust margins to make the layout balanced */
 }
 
 button:hover {
-    background-color: #45a049;
+    background-color: #9a30e1;
+}
+
+p {
+    margin: 5px 0 0 0;
+    /* Remove extra space above and below the instructions */
+    font-family: 'Borel', fantasy;
+    font-size: 16px;
+    color: white;
+    text-align: center;
 }

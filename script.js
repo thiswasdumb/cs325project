@@ -2,10 +2,8 @@ import * as THREE from 'https://cdn.skypack.dev/three@0.129.0/build/three.module
 import { createMenu } from './game/menu.js';
 import { createLevel1 } from './game/level1.js';
 import { createLevel2 } from './game/level2.js';
-//import { GLTFLoader } from '../node_modules/three/examples/jsm/loaders/GLTFLoader.js';
 
 console.log(THREE);
-//console.log(GLTFLoader);
 
 // Basic Setup
 const renderer = new THREE.WebGLRenderer();

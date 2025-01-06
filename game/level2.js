@@ -57,6 +57,10 @@ export function createLevel2(renderer, scene, camera, nextLevelCallback) {
         { model: '../assets/musiccrystal5', sound: '../assets/sounds/G4.mp3' }
     ];
 
+    // Track player's click sequence
+    let playerClickOrder = [];
+    const correctOrder = ['C4', 'D4', 'E4', 'F4', 'G4']; // Ascending order of notes
+
     const crystalGroup = new THREE.Group(); // Group to hold all music crystals
     function handleMouseClick(event) {
         // Convert mouse position to normalized device coordinates
@@ -72,10 +76,6 @@ export function createLevel2(renderer, scene, camera, nextLevelCallback) {
         if (intersects.length > 0) {
             let clickedObject = intersects[0].object;
 
-            console.log('Clicked Object:', clickedObject);
-            console.log('Parent Hierarchy:', clickedObject?.parent);
-
-
             // Traverse up the parent hierarchy to find a mapped object
             while (clickedObject && !soundMap.has(clickedObject)) {
                 clickedObject = clickedObject.parent;
@@ -85,17 +85,34 @@ export function createLevel2(renderer, scene, camera, nextLevelCallback) {
                 const soundPath = soundMap.get(clickedObject);
                 const audio = new Audio(soundPath);
                 audio.play();
-                console.log(`Played sound: ${soundPath}`);
+
+                const note = soundPath.match(/\/(\w+)\.mp3$/)[1]; // Extract note (e.g., "C4" from "../assets/sounds/C4.mp3")
+                console.log(`Played sound: ${note}`);
+
+                // Check order
+                if (note === correctOrder[playerClickOrder.length]) {
+                    playerClickOrder.push(note);
+                    console.log(`Correct click! Current sequence: ${playerClickOrder.join(', ')}`);
+                    if (playerClickOrder.length === correctOrder.length) {
+                        console.log("You solved the puzzle!");
+                        alert("Congratulations! You solved the puzzle!");
+                    }
+                } else {
+                    console.log("Incorrect click. Resetting...");
+                    playerClickOrder = []; // Reset progress
+                }
             } else {
                 console.log('Clicked object is not mapped to a sound.');
             }
         } else {
             console.log('No object clicked.');
         }
-    }
+    } w
 
 
     window.addEventListener('click', handleMouseClick);
+
+    musicCrystals.sort(() => Math.random() - 0.5);
 
     musicCrystals.forEach((crystalData, index) => {
         loader.load(
