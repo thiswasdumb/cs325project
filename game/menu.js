@@ -138,5 +138,68 @@ export function createMenu(startGameCallback) {
     });
     menuOverlay.appendChild(startButton);
 
+    // Instructions Button
+    const instructionsButton = document.createElement('button');
+    instructionsButton.textContent = 'Instructions';
+    instructionsButton.style.padding = '10px 20px 0px 20px';
+    instructionsButton.style.fontSize = '18px';
+    instructionsButton.style.marginTop = '10px';
+    instructionsButton.style.cursor = 'pointer';
+    instructionsButton.addEventListener('click', () => showInstructions(menuOverlay));
+    menuOverlay.appendChild(instructionsButton);
+
     document.body.appendChild(menuOverlay);
+}
+
+// Function to show instructions
+function showInstructions(menuOverlay) {
+    menuOverlay.style.display = 'none'; // Hide the main menu
+
+    const instructionsOverlay = document.createElement('div');
+    instructionsOverlay.style.position = 'fixed';
+    instructionsOverlay.style.top = '0';
+    instructionsOverlay.style.left = '0';
+    instructionsOverlay.style.width = '100vw';
+    instructionsOverlay.style.height = '100vh';
+    instructionsOverlay.style.display = 'flex';
+    instructionsOverlay.style.justifyContent = 'center';
+    instructionsOverlay.style.alignItems = 'center';
+    instructionsOverlay.style.color = 'white';
+    instructionsOverlay.style.fontFamily = '"Borel", sans-serif';
+    instructionsOverlay.style.textAlign = 'center';
+    instructionsOverlay.style.flexDirection = 'column';
+    instructionsOverlay.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+
+    const instructionsText = document.createElement('div');
+    instructionsText.style.fontSize = '18px';
+    instructionsText.style.marginBottom = '20px';
+
+    // Add each sentence as a separate paragraph
+    const sentences = [
+        "Use the WASD keys to move around the game world.",
+        "Press 'Esc' to unlock the mouse and interact with buttons.",
+        "Instructions will be provided at each level.",
+        "Enjoy this simple game!"
+    ];
+    sentences.forEach(sentence => {
+        const sentenceElement = document.createElement('p');
+        sentenceElement.textContent = sentence;
+        sentenceElement.style.margin = '5px 0'; // Add spacing between lines
+        instructionsText.appendChild(sentenceElement);
+    });
+
+    instructionsOverlay.appendChild(instructionsText);
+
+    const backButton = document.createElement('button');
+    backButton.textContent = 'Back';
+    backButton.style.padding = '10px 20px';
+    backButton.style.fontSize = '18px';
+    backButton.style.cursor = 'pointer';
+    backButton.addEventListener('click', () => {
+        instructionsOverlay.remove();
+        menuOverlay.style.display = 'flex'; // Show the main menu again
+    });
+    instructionsOverlay.appendChild(backButton);
+
+    document.body.appendChild(instructionsOverlay);
 }

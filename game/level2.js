@@ -6,11 +6,72 @@ import { EventDispatcher } from 'https://cdn.skypack.dev/three@0.129.0/build/thr
 // Initialize a Map to track sounds
 const soundMap = new Map();
 
-export function createLevel2(renderer, scene, camera, nextLevelCallback) {
+export function createLevel2(renderer, scene, camera) {
+    function showIntroMessage() {
+        const messageBox = document.createElement('div');
+        messageBox.style.position = 'fixed';
+        messageBox.style.top = '20px';
+        messageBox.style.left = '50%';
+        messageBox.style.transform = 'translateX(-50%)';
+        messageBox.style.width = '60%';
+        messageBox.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+        messageBox.style.color = 'white';
+        messageBox.style.padding = '20px';
+        messageBox.style.borderRadius = '10px';
+        messageBox.style.fontFamily = '"Borel", sans-serif';
+        messageBox.style.fontSize = '18px';
+        messageBox.style.textAlign = 'center';
+        messageBox.style.zIndex = '1000';
+        messageBox.style.pointerEvents = 'auto'; // Ensure it allows clicks only while visible
+        document.body.appendChild(messageBox);
+
+        // Add the message text with typing effect
+        const message = "Approach the crystals and click them for notes. In order to complete the puzzle, you must correctly click the crystals in ascending order of notes.";
+        let index = 0;
+
+        function typeMessage() {
+            if (index < message.length) {
+                messageBox.textContent += message[index];
+                index++;
+                setTimeout(typeMessage, 50); // Adjust typing speed
+            } else {
+                // Add the "Okay" button after typing is complete
+                const okayButton = document.createElement('button');
+                okayButton.textContent = 'Okay';
+                okayButton.style.marginTop = '20px';
+                okayButton.style.padding = '10px 20px 0px 20px';
+                okayButton.style.fontSize = '16px';
+                okayButton.style.cursor = 'pointer';
+                okayButton.style.border = 'none';
+                okayButton.style.borderRadius = '5px';
+                okayButton.style.backgroundColor = '#6b12ca';
+                okayButton.style.color = 'white';
+                okayButton.style.transition = 'background-color 0.3s';
+                okayButton.addEventListener('mouseenter', () => {
+                    okayButton.style.backgroundColor = '#9a30e1';
+                });
+                okayButton.addEventListener('mouseleave', () => {
+                    okayButton.style.backgroundColor = '#6b12ca';
+                });
+                okayButton.addEventListener('click', () => {
+                    messageBox.style.pointerEvents = 'none'; // Ensure it no longer blocks interaction
+                    messageBox.remove();
+                });
+                messageBox.appendChild(document.createElement('br')); // Add spacing
+                messageBox.appendChild(okayButton);
+            }
+        }
+
+        typeMessage();
+    }
+
     // Clear previous scene
     while (scene.children.length > 0) {
         scene.remove(scene.children[0]);
     }
+
+    // Show the message when the level starts
+    showIntroMessage();
 
     // Set up the cave floor
     const planeGeometry = new THREE.PlaneGeometry(100, 100, 50, 50);
@@ -107,7 +168,7 @@ export function createLevel2(renderer, scene, camera, nextLevelCallback) {
         } else {
             console.log('No object clicked.');
         }
-    } w
+    };
 
 
     window.addEventListener('click', handleMouseClick);
@@ -283,6 +344,10 @@ export function createLevel2(renderer, scene, camera, nextLevelCallback) {
 
     // Add the mouse click event listener
     window.addEventListener('click', handleMouseClick);
+
+    document.removeEventListener('keydown', existingKeyDownHandler);
+    document.removeEventListener('keyup', existingKeyUpHandler);
+
 
     // Player movement
     const movePlayer = setupPlayer(camera);

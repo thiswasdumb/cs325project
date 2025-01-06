@@ -7,6 +7,9 @@ export function setupPlayer(camera) {
     const groundLevel = 2; // Fixed height for the player above the ground
     let pointerLocked = false; // Track pointer lock status
 
+    // Set the camera's rotation order to 'YXZ'
+    camera.rotation.order = 'YXZ';
+
     // Add crosshair to the screen
     function createCrosshair() {
         const crosshair = document.createElement('div');
@@ -15,7 +18,7 @@ export function setupPlayer(camera) {
         crosshair.style.left = '50%';
         crosshair.style.width = '8px';
         crosshair.style.height = '8px';
-        crosshair.style.backgroundColor = 'red';
+        crosshair.style.backgroundColor = 'purple';
         crosshair.style.borderRadius = '50%'; // Make it a dot
         crosshair.style.transform = 'translate(-50%, -50%)';
         crosshair.style.zIndex = '1000'; // Ensure it appears above everything

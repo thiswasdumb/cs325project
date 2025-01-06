@@ -15,7 +15,7 @@ const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerH
 
 // Start the Game
 function startGame() {
-    createLevel2(renderer, scene, camera, () => {
+    createLevel1(renderer, scene, camera, () => {
         alert("You completed Level 2! Add a transition to Level 2 here.");
     });
 }
