@@ -1,4 +1,4 @@
-# WebGL Puzzle Adventure Game
+# WebGL Puzzle Adventure Gam (Auric Paths)
 
 ## Introduction
 This project is a WebGL-based 3D puzzle game built using [Three.js](https://threejs.org/). It offers players an immersive experience across two unique levels, each designed with distinct environments and interactive gameplay mechanics. With a focus on visual aesthetics, user experience, and technical implementation, the game demonstrates the integration of advanced web technologies and creative design.
